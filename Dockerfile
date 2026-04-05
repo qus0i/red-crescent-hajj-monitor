@@ -21,8 +21,8 @@ COPY --from=builder /app/package.json ./
 COPY --from=builder /app/shared ./shared
 COPY --from=builder /app/drizzle.config.ts ./
 
-# Copy public assets (logos etc)
-COPY --from=builder /app/public ./public
+# Create uploads directory for file uploads
+RUN mkdir -p public/uploads
 
 EXPOSE 5000
 ENV NODE_ENV=production

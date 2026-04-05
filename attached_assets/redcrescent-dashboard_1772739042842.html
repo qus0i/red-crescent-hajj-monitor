@@ -1,0 +1,1280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Saudi Red Crescent — Paramedic Command Center</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@300;400;600;700;900&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #080c10;
+    --surface: #0d1117;
+    --surface2: #111820;
+    --surface3: #161e28;
+    --border: #1e2d3d;
+    --border2: #243040;
+    --red: #e8001a;
+    --red-dim: #9c0010;
+    --red-glow: rgba(232,0,26,0.15);
+    --amber: #f5a623;
+    --amber-dim: #a06a10;
+    --green: #00d67a;
+    --green-dim: #007a45;
+    --blue: #0094ff;
+    --blue-dim: #004c8a;
+    --text: #c8d8e8;
+    --text-dim: #5a7a9a;
+    --text-bright: #e8f4ff;
+    --mono: 'Share Tech Mono', monospace;
+    --display: 'Barlow Condensed', sans-serif;
+    --body: 'Barlow', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--body);
+    font-size: 13px;
+    overflow: hidden;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* HEADER */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    height: 56px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    position: relative;
+    z-index: 100;
+  }
+
+  .header::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--red), transparent);
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .logo-emblem {
+    width: 36px; height: 36px;
+    background: var(--red);
+    border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+    font-weight: 900;
+    color: white;
+    font-family: var(--display);
+    position: relative;
+    box-shadow: 0 0 20px var(--red-glow);
+  }
+
+  .logo-text {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .logo-title {
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: 15px;
+    letter-spacing: 2px;
+    color: var(--text-bright);
+    text-transform: uppercase;
+  }
+
+  .logo-sub {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--text-dim);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+  }
+
+  .header-center {
+    display: flex;
+    gap: 24px;
+    align-items: center;
+  }
+
+  .nav-btn {
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: 13px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 6px 12px;
+    border-radius: 3px;
+    transition: all 0.2s;
+  }
+
+  .nav-btn:hover, .nav-btn.active {
+    color: var(--text-bright);
+    background: var(--surface3);
+  }
+
+  .nav-btn.active {
+    color: var(--red);
+    border-bottom: 2px solid var(--red);
+    border-radius: 3px 3px 0 0;
+  }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .live-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--green);
+    letter-spacing: 1px;
+  }
+
+  .live-dot {
+    width: 7px; height: 7px;
+    background: var(--green);
+    border-radius: 50%;
+    animation: pulse 1.5s infinite;
+    box-shadow: 0 0 8px var(--green);
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.8); }
+  }
+
+  .time-display {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+  }
+
+  .alert-counter {
+    background: var(--red);
+    color: white;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 2px;
+    animation: alertPulse 2s infinite;
+  }
+
+  @keyframes alertPulse {
+    0%, 100% { box-shadow: 0 0 8px var(--red-glow); }
+    50% { box-shadow: 0 0 20px rgba(232,0,26,0.5); }
+  }
+
+  /* LAYOUT */
+  .main {
+    display: grid;
+    grid-template-columns: 280px 1fr 320px;
+    grid-template-rows: 1fr;
+    flex: 1;
+    overflow: hidden;
+    gap: 0;
+  }
+
+  /* SIDEBAR LEFT - Paramedic List */
+  .sidebar-left {
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .panel-header {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+
+  .panel-title {
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: 12px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+  }
+
+  .panel-count {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--blue);
+  }
+
+  .paramedic-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px;
+  }
+
+  .paramedic-list::-webkit-scrollbar { width: 4px; }
+  .paramedic-list::-webkit-scrollbar-track { background: transparent; }
+  .paramedic-list::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+  .paramedic-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 10px 12px;
+    margin-bottom: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .paramedic-card::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: var(--green);
+  }
+
+  .paramedic-card.status-warning::before { background: var(--amber); }
+  .paramedic-card.status-critical::before { background: var(--red); }
+
+  .paramedic-card:hover, .paramedic-card.selected {
+    background: var(--surface3);
+    border-color: var(--border2);
+  }
+
+  .paramedic-card.selected {
+    border-color: var(--blue);
+  }
+
+  .card-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+  }
+
+  .card-name {
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--text-bright);
+    letter-spacing: 0.5px;
+  }
+
+  .card-id {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-dim);
+  }
+
+  .status-badge {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 1px;
+    padding: 2px 6px;
+    border-radius: 2px;
+    text-transform: uppercase;
+  }
+
+  .status-badge.ok { background: rgba(0,214,122,0.1); color: var(--green); border: 1px solid var(--green-dim); }
+  .status-badge.warn { background: rgba(245,166,35,0.1); color: var(--amber); border: 1px solid var(--amber-dim); }
+  .status-badge.crit { background: rgba(232,0,26,0.1); color: var(--red); border: 1px solid var(--red-dim); animation: alertPulse 1.5s infinite; }
+
+  .card-vitals {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 4px;
+    margin-top: 4px;
+  }
+
+  .mini-vital {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .mini-vital-label {
+    font-family: var(--mono);
+    font-size: 8px;
+    color: var(--text-dim);
+    letter-spacing: 0.5px;
+  }
+
+  .mini-vital-value {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text);
+    font-weight: 700;
+  }
+
+  .mini-vital-value.warn { color: var(--amber); }
+  .mini-vital-value.crit { color: var(--red); }
+
+  .card-location {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--text-dim);
+    margin-top: 5px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  /* CENTER - Map */
+  .center-panel {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .map-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 16px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    z-index: 10;
+  }
+
+  .map-stats {
+    display: flex;
+    gap: 20px;
+  }
+
+  .map-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .map-stat-value {
+    font-family: var(--mono);
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 1;
+  }
+
+  .map-stat-label {
+    font-family: var(--display);
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-top: 2px;
+  }
+
+  .map-controls {
+    display: flex;
+    gap: 6px;
+  }
+
+  .map-btn {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 1px;
+    padding: 5px 10px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    border-radius: 3px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-transform: uppercase;
+  }
+
+  .map-btn:hover, .map-btn.active {
+    background: var(--surface3);
+    color: var(--text-bright);
+    border-color: var(--border2);
+  }
+
+  #map {
+    flex: 1;
+    z-index: 1;
+  }
+
+  /* AI Risk overlay */
+  .ai-overlay {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    background: rgba(13,17,23,0.95);
+    border: 1px solid var(--border2);
+    border-radius: 4px;
+    padding: 12px 16px;
+    z-index: 500;
+    min-width: 200px;
+    backdrop-filter: blur(8px);
+  }
+
+  .ai-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 2px;
+    color: var(--blue);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .ai-insight {
+    font-family: var(--body);
+    font-size: 11px;
+    color: var(--text);
+    line-height: 1.5;
+    border-left: 2px solid var(--blue);
+    padding-left: 8px;
+    margin-bottom: 6px;
+  }
+
+  /* SIDEBAR RIGHT - Alerts + Vitals */
+  .sidebar-right {
+    background: var(--surface);
+    border-left: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .alerts-section {
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    max-height: 280px;
+  }
+
+  .alert-list {
+    overflow-y: auto;
+    flex: 1;
+    padding: 8px;
+  }
+
+  .alert-list::-webkit-scrollbar { width: 3px; }
+  .alert-list::-webkit-scrollbar-thumb { background: var(--border2); }
+
+  .alert-item {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 8px 10px;
+    margin-bottom: 5px;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .alert-item.critical {
+    border-color: var(--red-dim);
+    background: rgba(232,0,26,0.05);
+  }
+
+  .alert-item.warning {
+    border-color: var(--amber-dim);
+    background: rgba(245,166,35,0.05);
+  }
+
+  .alert-icon {
+    font-size: 14px;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .alert-content { flex: 1; }
+
+  .alert-title {
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: 12px;
+    color: var(--text-bright);
+    letter-spacing: 0.5px;
+  }
+
+  .alert-desc {
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-top: 2px;
+    line-height: 1.4;
+  }
+
+  .alert-time {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--text-dim);
+    margin-top: 3px;
+  }
+
+  .alert-actions {
+    display: flex;
+    gap: 4px;
+    margin-top: 6px;
+  }
+
+  .action-btn {
+    font-family: var(--mono);
+    font-size: 9px;
+    padding: 3px 7px;
+    border-radius: 2px;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border: 1px solid;
+    transition: all 0.15s;
+  }
+
+  .action-btn.dispatch {
+    background: rgba(232,0,26,0.15);
+    border-color: var(--red-dim);
+    color: var(--red);
+  }
+
+  .action-btn.dispatch:hover {
+    background: rgba(232,0,26,0.3);
+  }
+
+  .action-btn.ack {
+    background: rgba(0,148,255,0.1);
+    border-color: var(--blue-dim);
+    color: var(--blue);
+  }
+
+  .action-btn.ack:hover {
+    background: rgba(0,148,255,0.2);
+  }
+
+  /* Vitals Detail Panel */
+  .detail-panel {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0;
+  }
+
+  .detail-panel::-webkit-scrollbar { width: 3px; }
+  .detail-panel::-webkit-scrollbar-thumb { background: var(--border2); }
+
+  .detail-header {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface2);
+  }
+
+  .detail-name {
+    font-family: var(--display);
+    font-weight: 900;
+    font-size: 20px;
+    color: var(--text-bright);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  .detail-meta {
+    display: flex;
+    gap: 12px;
+    margin-top: 4px;
+  }
+
+  .detail-meta-item {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-dim);
+    display: flex;
+    gap: 4px;
+  }
+
+  .detail-meta-item span {
+    color: var(--text);
+  }
+
+  .vitals-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    padding: 12px;
+  }
+
+  .vital-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 10px 12px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .vital-card::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--green);
+    opacity: 0.3;
+  }
+
+  .vital-card.warn::after { background: var(--amber); opacity: 0.6; }
+  .vital-card.crit::after { background: var(--red); opacity: 0.8; animation: alertPulse 1.5s infinite; }
+
+  .vital-icon {
+    font-size: 16px;
+    margin-bottom: 4px;
+    display: block;
+  }
+
+  .vital-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .vital-value {
+    font-family: var(--mono);
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text-bright);
+    line-height: 1.1;
+  }
+
+  .vital-value.warn { color: var(--amber); }
+  .vital-value.crit { color: var(--red); }
+
+  .vital-unit {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-dim);
+  }
+
+  .vital-trend {
+    font-family: var(--mono);
+    font-size: 10px;
+    margin-top: 2px;
+  }
+
+  .vital-trend.up { color: var(--red); }
+  .vital-trend.down { color: var(--green); }
+  .vital-trend.stable { color: var(--text-dim); }
+
+  /* AI Risk Score */
+  .risk-section {
+    padding: 12px;
+    border-top: 1px solid var(--border);
+  }
+
+  .risk-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+
+  .risk-title {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--blue);
+    text-transform: uppercase;
+  }
+
+  .risk-score-big {
+    font-family: var(--mono);
+    font-size: 32px;
+    font-weight: 700;
+    line-height: 1;
+  }
+
+  .risk-bar-container {
+    height: 6px;
+    background: var(--surface3);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-bottom: 8px;
+  }
+
+  .risk-bar {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.5s ease;
+    background: linear-gradient(90deg, var(--green), var(--amber), var(--red));
+  }
+
+  .risk-insight {
+    font-size: 11px;
+    color: var(--text-dim);
+    line-height: 1.5;
+    padding: 8px;
+    background: var(--surface2);
+    border-radius: 4px;
+    border-left: 2px solid var(--blue);
+  }
+
+  /* Chart area */
+  .chart-section {
+    padding: 12px;
+    border-top: 1px solid var(--border);
+  }
+
+  .chart-title {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--text-dim);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .chart-wrap {
+    height: 80px;
+    position: relative;
+  }
+
+  /* High Risk Area Banner */
+  .hira-banner {
+    background: rgba(232,0,26,0.08);
+    border: 1px solid var(--red-dim);
+    border-radius: 4px;
+    padding: 8px 12px;
+    margin: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .hira-icon { font-size: 16px; }
+
+  .hira-text {
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: 12px;
+    color: var(--red);
+    letter-spacing: 1px;
+  }
+
+  .hira-sub {
+    font-size: 10px;
+    color: var(--text-dim);
+    font-family: var(--mono);
+  }
+
+  /* Leaflet custom markers */
+  .custom-marker {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    border: 2px solid;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px;
+    font-family: var(--mono);
+    font-weight: 700;
+    backdrop-filter: blur(4px);
+    cursor: pointer;
+  }
+
+  .marker-green { background: rgba(0,214,122,0.2); border-color: #00d67a; color: #00d67a; box-shadow: 0 0 12px rgba(0,214,122,0.4); }
+  .marker-amber { background: rgba(245,166,35,0.2); border-color: #f5a623; color: #f5a623; box-shadow: 0 0 12px rgba(245,166,35,0.4); }
+  .marker-red { background: rgba(232,0,26,0.25); border-color: #e8001a; color: #e8001a; box-shadow: 0 0 16px rgba(232,0,26,0.5); animation: markerPulse 1.5s infinite; }
+
+  @keyframes markerPulse {
+    0%, 100% { box-shadow: 0 0 16px rgba(232,0,26,0.5); }
+    50% { box-shadow: 0 0 28px rgba(232,0,26,0.8); }
+  }
+
+  /* Bottom status bar */
+  .statusbar {
+    height: 28px;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    gap: 24px;
+    flex-shrink: 0;
+  }
+
+  .status-item {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-dim);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    letter-spacing: 0.5px;
+  }
+
+  .status-dot {
+    width: 5px; height: 5px;
+    border-radius: 50%;
+  }
+
+  .status-dot.green { background: var(--green); box-shadow: 0 0 6px var(--green); }
+  .status-dot.amber { background: var(--amber); }
+  .status-dot.red { background: var(--red); }
+
+  /* Scrollbar override for leaflet */
+  .leaflet-container { background: #0a0e14 !important; }
+  .leaflet-tile { filter: brightness(0.6) saturate(0.4) hue-rotate(160deg); }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="header">
+  <div class="logo">
+    <div class="logo-emblem">✚</div>
+    <div class="logo-text">
+      <div class="logo-title">Saudi Red Crescent</div>
+      <div class="logo-sub">Paramedic Field Command Center — v2.1</div>
+    </div>
+  </div>
+  <div class="header-center">
+    <button class="nav-btn active">Dashboard</button>
+    <button class="nav-btn">Field Reports</button>
+    <button class="nav-btn">Medical Records</button>
+    <button class="nav-btn">Analytics</button>
+    <button class="nav-btn">Settings</button>
+  </div>
+  <div class="header-right">
+    <div class="live-badge"><div class="live-dot"></div>LIVE FEED</div>
+    <div id="alertCounter" class="alert-counter">3 ALERTS</div>
+    <div id="clock" class="time-display">--:--:--</div>
+  </div>
+</header>
+
+<!-- MAIN LAYOUT -->
+<div class="main">
+
+  <!-- LEFT SIDEBAR - Paramedic List -->
+  <aside class="sidebar-left">
+    <div class="panel-header">
+      <div class="panel-title">Field Personnel</div>
+      <div class="panel-count" id="onlineCount">10 ONLINE</div>
+    </div>
+    <div class="paramedic-list" id="paramedicList"></div>
+  </aside>
+
+  <!-- CENTER - Map -->
+  <div class="center-panel">
+    <div class="map-toolbar">
+      <div class="map-stats">
+        <div class="map-stat">
+          <div class="map-stat-value" style="color: var(--green)" id="stat-ok">7</div>
+          <div class="map-stat-label">Normal</div>
+        </div>
+        <div class="map-stat">
+          <div class="map-stat-value" style="color: var(--amber)" id="stat-warn">2</div>
+          <div class="map-stat-label">Warning</div>
+        </div>
+        <div class="map-stat">
+          <div class="map-stat-value" style="color: var(--red)" id="stat-crit">1</div>
+          <div class="map-stat-label">Critical</div>
+        </div>
+        <div class="map-stat">
+          <div class="map-stat-value" style="color: var(--blue)">10</div>
+          <div class="map-stat-label">Active</div>
+        </div>
+      </div>
+      <div class="map-controls">
+        <button class="map-btn active">GPS Track</button>
+        <button class="map-btn">Heatmap</button>
+        <button class="map-btn">Zones</button>
+        <button class="map-btn">Satellite</button>
+      </div>
+    </div>
+
+    <div id="map"></div>
+
+    <div class="ai-overlay">
+      <div class="ai-label">⬡ AI Situational Insight</div>
+      <div class="ai-insight" id="aiInsight">Monitoring 10 field units. Elevated HR cluster detected in Al-Malaz district — possible heat stress event. Unit P-003 flagged for immediate review.</div>
+    </div>
+  </div>
+
+  <!-- RIGHT SIDEBAR - Alerts + Detail -->
+  <aside class="sidebar-right">
+    <div class="alerts-section">
+      <div class="panel-header">
+        <div class="panel-title">⚠ Alert Panel</div>
+        <div class="panel-count" style="color: var(--red)" id="alertCount">3 ACTIVE</div>
+      </div>
+      <div class="alert-list" id="alertList"></div>
+    </div>
+
+    <div class="detail-panel" id="detailPanel">
+      <!-- populated by JS -->
+    </div>
+  </aside>
+</div>
+
+<!-- STATUS BAR -->
+<div class="statusbar">
+  <div class="status-item"><div class="status-dot green"></div>Watch API: Connected</div>
+  <div class="status-item"><div class="status-dot green"></div>GPS Stream: Active</div>
+  <div class="status-item"><div class="status-dot amber"></div>Medical DB: Syncing</div>
+  <div class="status-item"><div class="status-dot green"></div>AI Engine: Online</div>
+  <div class="status-item" style="margin-left: auto; color: var(--text-dim)">
+    Last sync: <span id="lastSync" style="color: var(--text)">just now</span>
+  </div>
+</div>
+
+<script>
+// ===================== DATA =====================
+const paramedics = [
+  { id: 'P-001', name: 'Omar Al-Rashid', age: 34, gender: 'M', bloodType: 'A+', zone: 'Al-Malaz', lat: 24.692, lng: 46.723, status: 'ok', hr: 78, spo2: 98, temp: 36.8, bp: '118/76', steps: 3240, battery: 82, fallDetected: false, sos: false, riskScore: 18, shiftHours: 4.2 },
+  { id: 'P-002', name: 'Fatima Al-Zahrani', age: 28, gender: 'F', bloodType: 'O+', zone: 'Al-Malaz', lat: 24.700, lng: 46.730, status: 'warning', hr: 115, spo2: 95, temp: 37.4, bp: '130/88', steps: 5120, battery: 61, fallDetected: false, sos: false, riskScore: 62, shiftHours: 6.8 },
+  { id: 'P-003', name: 'Khalid Al-Ghamdi', age: 41, gender: 'M', bloodType: 'B+', zone: 'Al-Malaz', lat: 24.688, lng: 46.718, status: 'critical', hr: 148, spo2: 91, temp: 38.6, bp: '156/102', steps: 8900, battery: 23, fallDetected: true, sos: false, riskScore: 91, shiftHours: 9.1 },
+  { id: 'P-004', name: 'Nora Al-Otaibi', age: 31, gender: 'F', bloodType: 'AB-', zone: 'Ad-Diriyah', lat: 24.730, lng: 46.575, status: 'ok', hr: 72, spo2: 99, temp: 36.5, bp: '112/72', steps: 2100, battery: 91, fallDetected: false, sos: false, riskScore: 12, shiftHours: 2.1 },
+  { id: 'P-005', name: 'Yazeed Al-Harbi', age: 37, gender: 'M', bloodType: 'O-', zone: 'Ad-Diriyah', lat: 24.738, lng: 46.582, status: 'ok', hr: 85, spo2: 97, temp: 36.9, bp: '122/80', steps: 4380, battery: 74, fallDetected: false, sos: false, riskScore: 29, shiftHours: 5.3 },
+  { id: 'P-006', name: 'Aisha Al-Dosari', age: 26, gender: 'F', bloodType: 'A-', zone: 'Qurtuba', lat: 24.756, lng: 46.650, status: 'ok', hr: 69, spo2: 99, temp: 36.6, bp: '108/70', steps: 1870, battery: 88, fallDetected: false, sos: false, riskScore: 8, shiftHours: 1.8 },
+  { id: 'P-007', name: 'Saleh Al-Mutairi', age: 44, gender: 'M', bloodType: 'B-', zone: 'Qurtuba', lat: 24.762, lng: 46.656, status: 'warning', hr: 108, spo2: 94, temp: 37.7, bp: '138/92', steps: 6700, battery: 45, fallDetected: false, sos: false, riskScore: 55, shiftHours: 8.0 },
+  { id: 'P-008', name: 'Rana Al-Shehri', age: 29, gender: 'F', bloodType: 'O+', zone: 'Al-Olaya', lat: 24.690, lng: 46.688, status: 'ok', hr: 76, spo2: 98, temp: 36.7, bp: '116/74', steps: 3100, battery: 79, fallDetected: false, sos: false, riskScore: 15, shiftHours: 3.5 },
+  { id: 'P-009', name: 'Tariq Al-Qahtani', age: 38, gender: 'M', bloodType: 'A+', zone: 'Al-Olaya', lat: 24.695, lng: 46.694, status: 'ok', hr: 82, spo2: 97, temp: 37.0, bp: '124/82', steps: 3950, battery: 66, fallDetected: false, sos: false, riskScore: 22, shiftHours: 4.9 },
+  { id: 'P-010', name: 'Hind Al-Balawi', age: 33, gender: 'F', bloodType: 'AB+', zone: 'Al-Naseem', lat: 24.715, lng: 46.765, status: 'ok', hr: 74, spo2: 99, temp: 36.4, bp: '110/68', steps: 2600, battery: 93, fallDetected: false, sos: false, riskScore: 10, shiftHours: 2.7 },
+];
+
+const alerts = [
+  { type: 'critical', icon: '🔴', title: 'FALL DETECTED — P-003', desc: 'Khalid Al-Ghamdi — Al-Malaz zone. No response for 40 seconds.', time: '14:23:07', id: 'P-003' },
+  { type: 'critical', icon: '🆘', title: 'CRITICAL VITALS — P-003', desc: 'HR: 148 BPM / SpO₂: 91% / Temp: 38.6°C — All thresholds exceeded.', time: '14:23:10', id: 'P-003' },
+  { type: 'warning', icon: '⚠️', title: 'ELEVATED HR — P-002', desc: 'Fatima Al-Zahrani — HR 115 BPM for >8 minutes. Heat stress risk.', time: '14:19:45', id: 'P-002' },
+  { type: 'warning', icon: '🔋', title: 'LOW BATTERY — P-003', desc: 'Khalid Al-Ghamdi — Watch battery at 23%. Data loss risk if not charged.', time: '14:15:30', id: 'P-003' },
+  { type: 'warning', icon: '⚠️', title: 'ELEVATED HR — P-007', desc: 'Saleh Al-Mutairi — HR 108 BPM / SpO₂ 94%. Monitoring recommended.', time: '14:10:12', id: 'P-007' },
+];
+
+// ===================== RENDER PARAMEDIC LIST =====================
+let selectedId = 'P-003';
+
+function getStatusClass(p) {
+  if (p.status === 'critical') return 'status-critical';
+  if (p.status === 'warning') return 'status-warning';
+  return '';
+}
+
+function getBadgeClass(s) {
+  if (s === 'critical') return 'crit';
+  if (s === 'warning') return 'warn';
+  return 'ok';
+}
+
+function getValueClass(val, warnThresh, critThresh) {
+  if (critThresh && val >= critThresh) return 'crit';
+  if (val >= warnThresh) return 'warn';
+  return '';
+}
+
+function renderParamedicList() {
+  const list = document.getElementById('paramedicList');
+  list.innerHTML = paramedics.map(p => `
+    <div class="paramedic-card ${getStatusClass(p)} ${p.id === selectedId ? 'selected' : ''}" onclick="selectParamedic('${p.id}')">
+      <div class="card-top">
+        <div>
+          <div class="card-name">${p.name}</div>
+          <div class="card-id">${p.id} · ${p.zone}</div>
+        </div>
+        <div class="status-badge ${getBadgeClass(p.status)}">${p.status.toUpperCase()}</div>
+      </div>
+      <div class="card-vitals">
+        <div class="mini-vital">
+          <div class="mini-vital-label">HR</div>
+          <div class="mini-vital-value ${getValueClass(p.hr, 100, 130)}">${p.hr}</div>
+        </div>
+        <div class="mini-vital">
+          <div class="mini-vital-label">SpO₂</div>
+          <div class="mini-vital-value ${p.spo2 < 92 ? 'crit' : p.spo2 < 95 ? 'warn' : ''}">${p.spo2}%</div>
+        </div>
+        <div class="mini-vital">
+          <div class="mini-vital-label">Temp</div>
+          <div class="mini-vital-value ${p.temp > 38.0 ? 'crit' : p.temp > 37.5 ? 'warn' : ''}">${p.temp}°</div>
+        </div>
+      </div>
+      <div class="card-location">📍 ${p.lat.toFixed(4)}, ${p.lng.toFixed(4)} · 🔋${p.battery}%</div>
+    </div>
+  `).join('');
+}
+
+// ===================== RENDER ALERTS =====================
+function renderAlerts() {
+  const list = document.getElementById('alertList');
+  list.innerHTML = alerts.map(a => `
+    <div class="alert-item ${a.type}">
+      <div class="alert-icon">${a.icon}</div>
+      <div class="alert-content">
+        <div class="alert-title">${a.title}</div>
+        <div class="alert-desc">${a.desc}</div>
+        <div class="alert-time">${a.time}</div>
+        <div class="alert-actions">
+          <button class="action-btn dispatch" onclick="handleDispatch('${a.id}')">Dispatch</button>
+          <button class="action-btn ack" onclick="handleAck(this)">Acknowledge</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function handleDispatch(id) {
+  alert(`🚨 Dispatching support team to ${id} — Al-Malaz district. ETA: 4 minutes.`);
+}
+
+function handleAck(btn) {
+  btn.closest('.alert-item').style.opacity = '0.4';
+  btn.textContent = 'ACKED';
+  btn.style.color = 'var(--text-dim)';
+}
+
+// ===================== RENDER DETAIL PANEL =====================
+let hrChart = null;
+
+function renderDetailPanel(id) {
+  const p = paramedics.find(x => x.id === id);
+  if (!p) return;
+
+  const riskColor = p.riskScore > 70 ? 'var(--red)' : p.riskScore > 40 ? 'var(--amber)' : 'var(--green)';
+
+  document.getElementById('detailPanel').innerHTML = `
+    <div class="detail-header">
+      <div class="detail-name">${p.name}</div>
+      <div class="detail-meta">
+        <div class="detail-meta-item">ID: <span>${p.id}</span></div>
+        <div class="detail-meta-item">Age: <span>${p.age}</span></div>
+        <div class="detail-meta-item">Gender: <span>${p.gender === 'M' ? 'Male' : 'Female'}</span></div>
+        <div class="detail-meta-item">Blood: <span>${p.bloodType}</span></div>
+      </div>
+      <div class="detail-meta" style="margin-top:4px">
+        <div class="detail-meta-item">Zone: <span>${p.zone}</span></div>
+        <div class="detail-meta-item">Shift: <span>${p.shiftHours}h active</span></div>
+      </div>
+    </div>
+
+    ${p.fallDetected ? `<div class="hira-banner"><div class="hira-icon">⚠️</div><div><div class="hira-text">FALL DETECTION TRIGGERED</div><div class="hira-sub">High Risk Personnel — Immediate response required</div></div></div>` : ''}
+
+    <div class="vitals-grid">
+      <div class="vital-card ${getValueClass(p.hr, 100, 130)}">
+        <span class="vital-icon">💓</span>
+        <div class="vital-label">Heart Rate</div>
+        <div class="vital-value ${getValueClass(p.hr, 100, 130)}">${p.hr}</div>
+        <div class="vital-unit">BPM</div>
+        <div class="vital-trend ${p.hr > 100 ? 'up' : 'stable'}">${p.hr > 130 ? '▲ CRITICAL' : p.hr > 100 ? '▲ HIGH' : '→ NORMAL'}</div>
+      </div>
+      <div class="vital-card ${p.spo2 < 92 ? 'crit' : p.spo2 < 95 ? 'warn' : ''}">
+        <span class="vital-icon">🫁</span>
+        <div class="vital-label">SpO₂ Oxygen</div>
+        <div class="vital-value ${p.spo2 < 92 ? 'crit' : p.spo2 < 95 ? 'warn' : ''}">${p.spo2}</div>
+        <div class="vital-unit">% Saturation</div>
+        <div class="vital-trend ${p.spo2 < 95 ? 'up' : 'stable'}">${p.spo2 < 92 ? '▼ CRITICAL' : p.spo2 < 95 ? '▼ LOW' : '→ NORMAL'}</div>
+      </div>
+      <div class="vital-card ${p.temp > 38.0 ? 'crit' : p.temp > 37.5 ? 'warn' : ''}">
+        <span class="vital-icon">🌡️</span>
+        <div class="vital-label">Temperature</div>
+        <div class="vital-value ${p.temp > 38.0 ? 'crit' : p.temp > 37.5 ? 'warn' : ''}">${p.temp}</div>
+        <div class="vital-unit">°C Body Temp</div>
+        <div class="vital-trend ${p.temp > 37.5 ? 'up' : 'stable'}">${p.temp > 38.0 ? '▲ FEVER' : p.temp > 37.5 ? '▲ ELEVATED' : '→ NORMAL'}</div>
+      </div>
+      <div class="vital-card">
+        <span class="vital-icon">🩸</span>
+        <div class="vital-label">Blood Pressure</div>
+        <div class="vital-value" style="font-size:16px;margin-top:6px">${p.bp}</div>
+        <div class="vital-unit">mmHg sys/dia</div>
+        <div class="vital-trend stable">→ Monitoring</div>
+      </div>
+      <div class="vital-card">
+        <span class="vital-icon">👟</span>
+        <div class="vital-label">Steps Today</div>
+        <div class="vital-value" style="font-size:18px;margin-top:6px">${p.steps.toLocaleString()}</div>
+        <div class="vital-unit">Steps counted</div>
+        <div class="vital-trend stable">Activity level</div>
+      </div>
+      <div class="vital-card ${p.battery < 25 ? 'crit' : p.battery < 50 ? 'warn' : ''}">
+        <span class="vital-icon">🔋</span>
+        <div class="vital-label">Watch Battery</div>
+        <div class="vital-value ${p.battery < 25 ? 'crit' : p.battery < 50 ? 'warn' : ''}">${p.battery}</div>
+        <div class="vital-unit">% Remaining</div>
+        <div class="vital-trend ${p.battery < 25 ? 'up' : 'stable'}">${p.battery < 25 ? '▼ CRITICAL LOW' : p.battery < 50 ? '▼ LOW' : '→ OK'}</div>
+      </div>
+    </div>
+
+    <div class="risk-section">
+      <div class="risk-header">
+        <div class="risk-title">⬡ AI Risk Score</div>
+        <div class="risk-score-big" style="color: ${riskColor}">${p.riskScore}<span style="font-size:14px;color:var(--text-dim)">/100</span></div>
+      </div>
+      <div class="risk-bar-container">
+        <div class="risk-bar" style="width: ${p.riskScore}%"></div>
+      </div>
+      <div class="risk-insight">${getAiInsight(p)}</div>
+    </div>
+
+    <div class="chart-section">
+      <div class="chart-title">Heart Rate — Last 30 Min</div>
+      <div class="chart-wrap">
+        <canvas id="hrMiniChart"></canvas>
+      </div>
+    </div>
+  `;
+
+  // Draw mini HR chart
+  setTimeout(() => {
+    const ctx = document.getElementById('hrMiniChart');
+    if (!ctx) return;
+    if (hrChart) { hrChart.destroy(); }
+    const baseHr = p.hr;
+    const data = Array.from({length: 30}, (_, i) => Math.round(baseHr + (Math.random() - 0.5) * 20 - (30 - i) * 0.3));
+    hrChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: data.map((_, i) => `-${30-i}m`),
+        datasets: [{
+          data,
+          borderColor: p.status === 'critical' ? '#e8001a' : p.status === 'warning' ? '#f5a623' : '#00d67a',
+          backgroundColor: p.status === 'critical' ? 'rgba(232,0,26,0.08)' : p.status === 'warning' ? 'rgba(245,166,35,0.08)' : 'rgba(0,214,122,0.08)',
+          borderWidth: 1.5,
+          pointRadius: 0,
+          fill: true,
+          tension: 0.4,
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: { enabled: false } },
+        scales: {
+          x: { display: false },
+          y: {
+            display: true,
+            grid: { color: 'rgba(30,45,61,0.6)' },
+            ticks: { color: '#5a7a9a', font: { size: 9, family: "'Share Tech Mono'" }, maxTicksLimit: 4 },
+            border: { display: false }
+          }
+        },
+        animation: false,
+      }
+    });
+  }, 50);
+}
+
+function getAiInsight(p) {
+  if (p.status === 'critical') return `⚠ CRITICAL: ${p.name.split(' ')[0]} has exceeded 3 vital thresholds simultaneously. Fall detection active. Fatigue index: EXTREME after ${p.shiftHours}h shift. Recommend immediate evacuation from field.`;
+  if (p.status === 'warning') return `⚡ WARNING: Elevated HR and temperature suggest heat stress. ${p.name.split(' ')[0]} has been active ${p.shiftHours}h. Recommend 15-min rest and hydration check.`;
+  return `✓ NOMINAL: All vitals within safe range. ${p.name.split(' ')[0]} is performing within healthy parameters. Predictive fatigue risk: LOW.`;
+}
+
+// ===================== MAP =====================
+let map, markers = {};
+
+function initMap() {
+  map = L.map('map', {
+    center: [24.710, 46.680],
+    zoom: 13,
+    zoomControl: false,
+    attributionControl: false
+  });
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 18,
+  }).addTo(map);
+
+  L.control.zoom({ position: 'topright' }).addTo(map);
+
+  paramedics.forEach(p => {
+    const color = p.status === 'critical' ? 'red' : p.status === 'warning' ? 'amber' : 'green';
+    const icon = L.divIcon({
+      html: `<div class="custom-marker marker-${color}">${p.id.split('-')[1]}</div>`,
+      className: '',
+      iconSize: [32, 32],
+      iconAnchor: [16, 16],
+    });
+    const marker = L.marker([p.lat, p.lng], { icon }).addTo(map);
+    marker.bindPopup(`
+      <div style="font-family:'Share Tech Mono',monospace;font-size:11px;color:#0a0e14;min-width:160px">
+        <strong>${p.id} — ${p.name}</strong><br/>
+        HR: ${p.hr} BPM | SpO₂: ${p.spo2}%<br/>
+        Temp: ${p.temp}°C | BP: ${p.bp}<br/>
+        Zone: ${p.zone}<br/>
+        Risk Score: ${p.riskScore}/100
+      </div>
+    `);
+    marker.on('click', () => selectParamedic(p.id));
+    markers[p.id] = marker;
+  });
+}
+
+function selectParamedic(id) {
+  selectedId = id;
+  renderParamedicList();
+  renderDetailPanel(id);
+  const p = paramedics.find(x => x.id === id);
+  if (p && map) {
+    map.setView([p.lat, p.lng], 15, { animate: true });
+    markers[id]?.openPopup();
+  }
+}
+
+// ===================== CLOCK =====================
+function updateClock() {
+  const now = new Date();
+  document.getElementById('clock').textContent = now.toLocaleTimeString('en-US', { hour12: false });
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ===================== SIMULATE LIVE DATA =====================
+setInterval(() => {
+  paramedics.forEach(p => {
+    // Simulate minor fluctuations
+    if (p.status !== 'critical') {
+      p.hr = Math.max(60, Math.min(160, p.hr + Math.round((Math.random() - 0.5) * 4)));
+      p.spo2 = Math.max(88, Math.min(100, p.spo2 + Math.round((Math.random() - 0.5) * 1)));
+      p.temp = parseFloat((p.temp + (Math.random() - 0.5) * 0.1).toFixed(1));
+    }
+    // Drift GPS
+    p.lat += (Math.random() - 0.5) * 0.001;
+    p.lng += (Math.random() - 0.5) * 0.001;
+
+    // Update marker
+    if (markers[p.id]) {
+      markers[p.id].setLatLng([p.lat, p.lng]);
+    }
+  });
+
+  renderParamedicList();
+  if (selectedId) renderDetailPanel(selectedId);
+}, 3000);
+
+// ===================== INIT =====================
+window.addEventListener('load', () => {
+  renderParamedicList();
+  renderAlerts();
+  initMap();
+  selectParamedic('P-003');
+});
+</script>
+</body>
+</html>
